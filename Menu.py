@@ -1,10 +1,12 @@
 import pygame
+import os
 
 pygame.init()
 
 
-class MenuButton:
+class MenuButton(pygame.sprite.Sprite):
     def __init__(self, text, pos_x, pos_y, width, height):
+        super().__init__()
         self.name = text
         self.rect = pygame.Rect(pos_x, pos_y, width, height)
         self.color = (255, 0, 0)
@@ -46,7 +48,7 @@ class Menu:
     def __init__(self, *args):
         self.buttons = args
 
-    def draw(self, surface, player=None):
+    def draw(self, surface):
         for button in self.buttons:
             button.draw(surface)
 
@@ -75,7 +77,7 @@ class QuitButton(MenuButton):
         super().__init__(text, pos_x, pos_y, width, height)
 
 
-class XSelectionButton(MenuButton):
+class XSelectionButton(MenuButton, pygame.sprite.Sprite):
     def __init__(self, text, pos_x, pos_y, width, height):
         super().__init__(text, pos_x, pos_y, width, height)
 
@@ -84,7 +86,7 @@ class XSelectionButton(MenuButton):
         pass
 
 
-class OSelectionButton(MenuButton):
+class OSelectionButton(MenuButton, pygame.sprite.Sprite):
     def __init__(self, text, pos_x, pos_y, width, height):
         super().__init__(text, pos_x, pos_y, width, height)
 
@@ -98,12 +100,18 @@ class GridButton(MenuButton):
         self.height = height
         self.color = (255, 255, 255)
         self.text = text
+        self.rect = pygame.Rect(pos_x, pos_y, width, height)
+        self.image = ''
 
-    def update(self, event):
+    def update(self, event, player=None, surface=None):
         position = pygame.mouse.get_pos()
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if self.is_over(position):
-                self.clicked = True
+        if event.type == pygame.MOUSEBUTTONDOWN and self.is_over(position):
+            self.clicked = True
+            self.image = pygame.image.load(os.path.join('png', player.character + '.png'))
+            if self.rect not in player.moves:
+                player.moves.append(self.rect)
+        else:
+            pass
 
         if event.type == pygame.MOUSEMOTION:
             if self.is_over(position):
@@ -111,26 +119,27 @@ class GridButton(MenuButton):
             else:
                 self.color = (255, 255, 255)
 
+    def get_rect(self):
+        return pygame.Rect(self.pos_x, self.pos_y, self.width, self.height)
+
     def draw(self, surface, player=None, outline=None):
         if outline:
             pygame.draw.rect(surface, outline,
                              (self.rect.x - 2, self.rect.y - 2, self.rect.width + 4, self.rect.height + 4), 0)
 
         pygame.draw.rect(surface, self.color, (self.rect.x, self.rect.y, self.rect.width, self.rect.height), 0)
-
-        if player and self.clicked:
+        if self.clicked:
             surface.blit(player.image, pygame.Rect(self.pos_x, self.pos_y, self.width, self.height))
 
 
-
-class GridMenu(Menu):
+class GridMenu:
     def __init__(self, *args):
-        super().__init__(self, *args)
+        self.buttons = args
 
-    def draw(self, surface, player=None):
+    def draw(self, surface, player=None, outline=None):
         for button in self.buttons:
-            button.draw(surface, player)
+            button.draw(surface, player, outline)
 
-    def update(self, event):
+    def update(self, event, player=None, surface=None):
         for button in self.buttons:
-            button.update(event)
+            button.update(event, player, surface)
